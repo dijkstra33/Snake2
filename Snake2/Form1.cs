@@ -13,14 +13,17 @@ namespace Snake2
     {
         Pen pen = new Pen(Color.Black);
         
+        SolidBrush mybrush = new SolidBrush(Color.Green);
+        SolidBrush foodBrush = new SolidBrush(Color.Red);
+        SolidBrush headbrush = new SolidBrush(Color.GreenYellow);
         Random rnd = new Random();
-        const int RAZMER = 8;
+        const int RAZMER = 10;
         
         public List<int> snakeX = new List<int>();
         public List<int> snakeY = new List<int>();
         public int NachaloZmX, NachaloZmY;      
         public int xOffset, yOffset;
-        public int FoodX=1, FoodY=1;
+        public int FoodX=3, FoodY=3, koordX, koordY, Score=0;
         public bool napravlenieVniz = false, napravlenieVverh = false, napravlenieVlevo = false, napravlenieVpravo = false;
         public CellType[,] board = new CellType[RAZMER, RAZMER];
         public Form1()
@@ -32,17 +35,14 @@ namespace Snake2
             
             // Use after test phase.
             snakeX.Add(RAZMER/2);
-            snakeY.Add(RAZMER/2);
+            snakeY.Add(RAZMER / 2);
 
-            // Temporary solution.
-            //snakeX.AddRange(new[] { 5 });
-            //snakeY.AddRange(new[] { 5 });
-            
-            
+
             InitializeComponent();
         }
         void timer1_Tick(object sender, EventArgs e)
-        {           
+        {
+
             moving();
             pictureBox1.Refresh();
         }
@@ -51,9 +51,8 @@ namespace Snake2
         {
             
             Graphics drawLine = e.Graphics;
-            Graphics g = this.CreateGraphics();
-            SolidBrush mybrush = new SolidBrush(Color.Green);
-            ClientSize = new Size(RAZMER * 35, RAZMER * 35);
+            Graphics g = pictureBox1.CreateGraphics();
+            ClientSize = new Size(RAZMER * 36, RAZMER * 36);
             pictureBox1.Width = 30 * RAZMER;
             pictureBox1.Height = 30 * RAZMER;
             
@@ -77,62 +76,90 @@ namespace Snake2
                     board[i, j] = CellType.Empty;
                 }
             }
-
+            board[FoodX, FoodY] = CellType.Food;
             for (int i = 0; i < snakeX.Count; i++)
             {
-                board[FoodX, FoodY] = CellType.Food;
                 board[snakeX[i], snakeY[i]] = CellType.Snake;
+                board[snakeX[0], snakeY[0]] = CellType.Head;
             }
-
+            
             for (int i = 0; i < RAZMER; i++)
             {
+                drawLine.DrawLine(pen, shagx * i, 0, shagx * i, PoleY);
                 for (int j = 0; j < RAZMER; j++)
                 {
                     drawLine.DrawLine(pen, 0, shagy * j, PoleX, shagy * j);
+                    
                     if ((int)board[i, j] == 1)
                     {
-                        //g.FillRectangle(mybrush, (i+1) * shagx, (j+1) * shagy, shagy, shagx);
+                        e.Graphics.FillRectangle(mybrush, j * shagy+1, i * shagx+1, shagx-1, shagy-1);
                     }
-                    Console.Write((int)board[i, j]);
-                }
-                drawLine.DrawLine(pen, shagx*i, 0, shagx*i, PoleY);
-                Console.WriteLine();
+                    if ((int)board[i, j] == 3)
+                    {
+                        e.Graphics.FillRectangle(headbrush, j * shagy + 1, i * shagx + 1, shagx - 1, shagy - 1);
+                    }
+                    if ((int)board[i, j] == 2)
+                    {
+                        e.Graphics.FillRectangle(foodBrush, j * shagy+1, i * shagx+1, shagx-1, shagy-1);
+                    }
+                } 
             }
-            Console.WriteLine();
+            drawLine.DrawRectangle(pen, 0, 0, PoleX-1, PoleY-1);
         }
 
         private void moving()
         {
             if (xOffset == 0) { napravlenieVniz = false; napravlenieVverh = false; }
             if (yOffset == 0) { napravlenieVlevo = false; napravlenieVpravo = false; }
-            for (int i = 0; i < snakeX.Count-1; i++)
+            int newX = snakeX[0] + xOffset;
+            int newY = snakeY[0] + yOffset;
+            koordX = snakeX[snakeX.Count - 1];
+            koordY = snakeY[snakeY.Count - 1];
+
+            for (int i = snakeX.Count - 1; i > 0; i--)
             {
-                snakeX[i] = snakeX[i + 1];
-                snakeY[i] = snakeY[i + 1];
+                snakeX[i] = snakeX[i - 1];
+                snakeY[i] = snakeY[i - 1];
             }
-
-            int newX = snakeX[snakeX.Count - 1] + xOffset;
-            int newY = snakeY[snakeY.Count - 1] + yOffset;
-
-
-            if ((InsideBoard(newX, newY))&&(InsideSnake(newX,newY)))
+            if ((InsideBoard(newX, newY)) && (InsideSnake(newX, newY)))
             {
-                snakeX[snakeX.Count - 1] = snakeX[snakeX.Count - 1] + xOffset;
-                snakeY[snakeY.Count - 1] = snakeY[snakeY.Count - 1] + yOffset;
-                if ((snakeX[snakeX.Count - 1] == FoodX) && (snakeY[snakeY.Count - 1] == FoodY))
+                snakeX[0] = snakeX[0] + xOffset;
+                snakeY[0] = snakeY[0] + yOffset;
+
+                if ((snakeX[0] == FoodX) && (snakeY[0] == FoodY))
                 {
-
-                    snakeX.Add(FoodX);
-                    snakeY.Add(FoodY);
-                    board[FoodX, FoodY] = CellType.Snake;
+                    if (timer1.Interval > 120)
+                        timer1.Interval -= 10;
+                    if (snakeX.Count == 1)
+                    {
+                        snakeX.Add(snakeX[0] - xOffset);
+                        snakeY.Add(snakeY[0] - yOffset);
+                        board[snakeX[0], snakeY[0]] = CellType.Head;
+                        board[snakeX[1], snakeY[1]] = CellType.Snake;
+                    }
+                    else
+                    {
+                        snakeX.Add(koordX);
+                        snakeY.Add(koordY);
+                        board[snakeX[0], snakeY[0]] = CellType.Head;
+                        board[koordX, koordY] = CellType.Snake;
+                    }
+                    Score++;
+                    toolStripStatusLabel1.Text = "Score:"+Score;
                 }
+                
             }
+            
             else
             {
                 timer1.Stop();
-                MessageBox.Show("XAXA");
+                MessageBox.Show("Score=" + Score);
             }
             
+            
+            
+
+
         }
 
         private bool InsideBoard(int x, int y)
