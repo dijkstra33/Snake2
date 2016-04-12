@@ -10,6 +10,8 @@ namespace Snake2
         
         Empty,
         Snake,
-        Food, Head
+        Food,
+        Head
+
     }
 }
