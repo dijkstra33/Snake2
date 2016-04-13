@@ -17,7 +17,7 @@ namespace Snake2
         SolidBrush foodBrush = new SolidBrush(Color.Red);
         SolidBrush headBrush = new SolidBrush(Color.GreenYellow);
         Random rnd = new Random();
-        const int SIZE = 4; 
+        const int SIZE = 10;
         public List<int> snakeX = new List<int>();
         public List<int> snakeY = new List<int>();
         public int xOffset, yOffset;
@@ -28,9 +28,9 @@ namespace Snake2
         public Form1()
         {
             // Set default offset.
-            xOffset = 1;
-            yOffset = 0;
-            isDirectionDown = true;
+            xOffset = 0;
+            yOffset = 1;
+            isDirectionRight = true;
             
             // Use after test phase.
             snakeX.Add(SIZE / 2);
@@ -43,7 +43,6 @@ namespace Snake2
             moving();
             pictureBox1.Refresh();
         }
-
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         { 
             Graphics drawLine = e.Graphics;
