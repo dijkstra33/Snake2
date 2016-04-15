@@ -1,64 +1,70 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace Snake2
 {
     public partial class Form1 : Form
     {
-        Pen pen = new Pen(Color.Black);
-        
-        SolidBrush snakeBrush = new SolidBrush(Color.Green);
-        SolidBrush foodBrush = new SolidBrush(Color.Red);
-        SolidBrush headBrush = new SolidBrush(Color.GreenYellow);
-        Random rnd = new Random();
-        const int SIZE = 10;
-        public List<int> snakeX = new List<int>();
-        public List<int> snakeY = new List<int>();
-        public int xOffset, yOffset;
-        public int FoodX=3, FoodY=3, coordX, coordY, Score=0;
-        public bool isDirectionDown = false, isDirectionUp = false, isDirectionLeft = false, isDirectionRight = false;
-        public CellType[,] board = new CellType[SIZE, SIZE];
-        int[] foodPlace = new int[SIZE * SIZE];
+        private readonly Pen pen = new Pen(Color.Black);
+        private readonly SolidBrush snakeBrush = new SolidBrush(Color.Green);
+        private readonly SolidBrush foodBrush = new SolidBrush(Color.Red);
+        private readonly SolidBrush headBrush = new SolidBrush(Color.GreenYellow);
+        private readonly Random rnd = new Random();
+        private const int NumberOfCells = 10;
+        private readonly List<int> snakeX = new List<int>();
+        private readonly List<int> snakeY = new List<int>();
+        private int xOffset;
+        private int yOffset;
+        public int FoodX = 3;
+        public int FoodY = 3;
+        private int coordX;
+        private int coordY;
+        public int Score;
+        private bool isDirectionDown;
+        public bool IsDirectionUp;
+        public bool IsDirectionLeft;
+        public bool IsDirectionRight;
+        private readonly CellType[,] board = new CellType[NumberOfCells, NumberOfCells];
+        private readonly int[] foodPlace = new int[NumberOfCells*NumberOfCells];
+
         public Form1()
         {
             // Set default offset.
             xOffset = 0;
             yOffset = 1;
-            isDirectionRight = true;
-            
+            IsDirectionRight = true;
+
             // Use after test phase.
-            snakeX.Add(SIZE / 2);
-            snakeY.Add(SIZE / 2);
+            snakeX.Add(NumberOfCells/2);
+            snakeY.Add(NumberOfCells/2);
 
             InitializeComponent();
         }
-        void timer1_Tick(object sender, EventArgs e)
+
+        private void timer1_Tick(object sender, EventArgs e)
         {
-            moving();
+            Moving();
             pictureBox1.Refresh();
         }
+
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
-        { 
+        {
             Graphics drawLine = e.Graphics;
-            Graphics g = pictureBox1.CreateGraphics();
-            ClientSize = new Size(SIZE * 36, SIZE * 36+10);
-            pictureBox1.Width = 30 * SIZE;
-            pictureBox1.Height = 30 * SIZE;
-           
+            pictureBox1.CreateGraphics();
+            ClientSize = new Size(NumberOfCells*36, NumberOfCells*36 + 10);
+            pictureBox1.Width = 30*NumberOfCells;
+            pictureBox1.Height = 30*NumberOfCells;
+
             int pictureBoxWidth = pictureBox1.Size.Width;
             int pictureBoxHeight = pictureBox1.Size.Height;
-            int OneCellx = pictureBoxWidth / SIZE;
-            int OneCelly = pictureBoxHeight / SIZE;
+            int oneCellx = pictureBoxWidth/NumberOfCells;
+            int oneCelly = pictureBoxHeight/NumberOfCells;
 
-            for (int i = 0; i < SIZE; i++)
+            for (int i = 0; i < NumberOfCells; i++)
             {
-                for (int j = 0; j < SIZE; j++)
+                for (int j = 0; j < NumberOfCells; j++)
                 {
                     board[i, j] = CellType.Empty;
                 }
@@ -69,53 +75,65 @@ namespace Snake2
                 board[snakeX[i], snakeY[i]] = CellType.Snake;
                 board[snakeX[0], snakeY[0]] = CellType.Head;
             }
-            
-            for (int i = 0; i < SIZE; i++)
+
+            for (int i = 0; i < NumberOfCells; i++)
             {
-                drawLine.DrawLine(pen, OneCellx * i, 0, OneCellx * i, pictureBoxHeight);
-                for (int j = 0; j < SIZE; j++)
+                drawLine.DrawLine(pen, oneCellx*i, 0, oneCellx*i, pictureBoxHeight);
+                for (int j = 0; j < NumberOfCells; j++)
                 {
-                    drawLine.DrawLine(pen, 0, OneCelly * j, pictureBoxWidth, OneCelly * j);
-                    
-                    if (board[i, j] == CellType.Snake)
+                    drawLine.DrawLine(pen, 0, oneCelly*j, pictureBoxWidth, oneCelly*j);
+
+                    switch (board[i, j])
                     {
-                        e.Graphics.FillRectangle(snakeBrush, j * OneCelly+1, i * OneCellx+1, OneCellx-1, OneCelly-1);
+                        case CellType.Snake:
+                            e.Graphics.FillRectangle(snakeBrush, j*oneCelly + 1, i*oneCellx + 1, oneCellx - 1, oneCelly - 1);
+                            break;
+                        case CellType.Head:
+                            e.Graphics.FillRectangle(headBrush, j*oneCelly + 1, i*oneCellx + 1, oneCellx - 1, oneCelly - 1);
+                            break;
+                        case CellType.Food:
+                            e.Graphics.FillRectangle(foodBrush, j*oneCelly + 1, i*oneCellx + 1, oneCellx - 1, oneCelly - 1);
+                            break;
+                        case CellType.Empty:
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
                     }
-                    if (board[i, j] == CellType.Head)
-                    {
-                        e.Graphics.FillRectangle(headBrush, j * OneCelly + 1, i * OneCellx + 1, OneCellx - 1, OneCelly - 1);
-                    }
-                    if (board[i, j] == CellType.Food)
-                    {
-                        e.Graphics.FillRectangle(foodBrush, j * OneCelly+1, i * OneCellx+1, OneCellx-1, OneCelly-1);
-                    }
-                } 
+                }
             }
-            drawLine.DrawRectangle(pen, 0, 0, pictureBoxWidth-1, pictureBoxHeight-1);
+            drawLine.DrawRectangle(pen, 0, 0, pictureBoxWidth - 1, pictureBoxHeight - 1);
         }
 
         public int FoodRespawn()
-        {      
-            int Count = 0;
-            for (int i = 0; i < SIZE; i++)
+        {
+            int count = 0;
+            for (int i = 0; i < NumberOfCells; i++)
             {
-                for (int j = 0; j < SIZE; j++)
+                for (int j = 0; j < NumberOfCells; j++)
                 {
                     if (board[i, j] == CellType.Empty)
                     {
-                        foodPlace[Count] = i * 10 + j;
-                        Count++;
+                        foodPlace[count] = i*10 + j;
+                        count++;
                     }
                 }
-            } 
-            int IndexOfRespawn = rnd.Next(0, Count-1);
-            return IndexOfRespawn; 
+            }
+            int indexOfRespawn = rnd.Next(0, count - 1);
+            return indexOfRespawn;
         }
 
-        private void moving()
+        private void Moving()
         {
-            if (xOffset == 0) { isDirectionDown = false; isDirectionUp = false; }
-            if (yOffset == 0) { isDirectionLeft = false; isDirectionRight = false; }
+            if (xOffset == 0)
+            {
+                isDirectionDown = false;
+                IsDirectionUp = false;
+            }
+            if (yOffset == 0)
+            {
+                IsDirectionLeft = false;
+                IsDirectionRight = false;
+            }
             int newX = snakeX[0] + xOffset;
             int newY = snakeY[0] + yOffset;
             coordX = snakeX[snakeX.Count - 1];
@@ -132,8 +150,8 @@ namespace Snake2
                 snakeY[0] = snakeY[0] + yOffset;
                 if ((snakeX[0] == FoodX) && (snakeY[0] == FoodY))
                 {
-                     if (timer1.Interval > 150)
-                     timer1.Interval -= 5;
+                    if (timer1.Interval > 150)
+                        timer1.Interval -= 5;
                     if (snakeX.Count == 1)
                     {
                         snakeX.Add(snakeX[0] - xOffset);
@@ -150,27 +168,26 @@ namespace Snake2
                     }
                     Score++;
                     toolStripStatusLabel1.Text = "Score:" + Score;
-                    if (Score == SIZE * SIZE - 1)
+                    if (Score == NumberOfCells*NumberOfCells - 1)
                     {
                         timer1.Stop();
                         MessageBox.Show("You Win!!!\nScore=" + Score);
                     }
                     else
                     {
-                        int IndexOfRespawn;
-                        IndexOfRespawn = FoodRespawn();
-                        if (foodPlace[IndexOfRespawn] < 10)
+                        int indexOfRespawn = FoodRespawn();
+                        if (foodPlace[indexOfRespawn] < 10)
                         {
                             FoodX = 0;
-                            FoodY = foodPlace[IndexOfRespawn];
+                            FoodY = foodPlace[indexOfRespawn];
                         }
                         else
                         {
-                            FoodX = foodPlace[IndexOfRespawn] / 10;
-                            FoodY = foodPlace[IndexOfRespawn] % 10;
+                            FoodX = foodPlace[indexOfRespawn]/10;
+                            FoodY = foodPlace[indexOfRespawn]%10;
                         }
                     }
-                }            
+                }
             }
             else
             {
@@ -181,15 +198,15 @@ namespace Snake2
 
         private bool InsideBoard(int x, int y)
         {
-            return ((x > -1 && x < SIZE) && (y > -1 && y < SIZE));
+            return ((x > -1 && x < NumberOfCells) && (y > -1 && y < NumberOfCells));
         }
 
         private bool InsideSnake(int x, int y)
-        {    
+        {
             for (int i = 0; i < snakeX.Count; i++)
             {
                 if ((x == snakeX[i]) && (y == snakeY[i]))
-                return false;
+                    return false;
             }
             return true;
         }
@@ -197,10 +214,30 @@ namespace Snake2
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Space) timer1.Start();
-            if (((e.KeyCode == Keys.W) || (e.KeyCode==Keys.Up)) && ((isDirectionDown != true)||(snakeX.Count<2))) { xOffset = -1; isDirectionUp = true; yOffset = 0; }
-            if (((e.KeyCode == Keys.S) || (e.KeyCode == Keys.Down)) && ((isDirectionUp != true)||(snakeX.Count<2))) { xOffset = 1; isDirectionDown = true; yOffset = 0; }
-            if (((e.KeyCode == Keys.D) || (e.KeyCode == Keys.Right)) && ((isDirectionLeft != true)||(snakeY.Count<2))) { yOffset = 1; isDirectionRight = true; xOffset = 0; }
-            if (((e.KeyCode == Keys.A) || (e.KeyCode == Keys.Left)) && ((isDirectionRight != true)||(snakeY.Count<2))) { yOffset = -1; isDirectionLeft = true; xOffset = 0; }
+            if (((e.KeyCode == Keys.W) || (e.KeyCode == Keys.Up)) && ((isDirectionDown != true) || (snakeX.Count < 2)))
+            {
+                xOffset = -1;
+                IsDirectionUp = true;
+                yOffset = 0;
+            }
+            if (((e.KeyCode == Keys.S) || (e.KeyCode == Keys.Down)) && ((IsDirectionUp != true) || (snakeX.Count < 2)))
+            {
+                xOffset = 1;
+                isDirectionDown = true;
+                yOffset = 0;
+            }
+            if (((e.KeyCode == Keys.D) || (e.KeyCode == Keys.Right)) && ((IsDirectionLeft != true) || (snakeY.Count < 2)))
+            {
+                yOffset = 1;
+                IsDirectionRight = true;
+                xOffset = 0;
+            }
+            if (((e.KeyCode == Keys.A) || (e.KeyCode == Keys.Left)) && ((IsDirectionRight != true) || (snakeY.Count < 2)))
+            {
+                yOffset = -1;
+                IsDirectionLeft = true;
+                xOffset = 0;
+            }
         }
     }
 }
